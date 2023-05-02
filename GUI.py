@@ -56,10 +56,13 @@ entry4_deposit.grid(row=4, column=2, padx=10)
 
 #Funktion für den Berechnen Button
 def button():
-    df = pd.read_csv("data/leasing_auto_2023.csv") # csv file wird aus dem data folder geladen
+    df = pd.read_csv('data/preprocessed_df.csv') # csv file wird aus dem data folder geladen
+    # Filter the rows where the column "brand_name_Mazda" is equal to 1
+    brand_monthly_fees = df.loc[df['brand_name'] == entry1_marke.get(), 'monthly_fee'].mean()
+
     mylabel1 = customtkinter.CTkLabel(master=frame, text="Leasing Preis von " + entry1_marke.get() + " wird berechnet!")
     mylabel1.grid(row=6, column=1)
-    mylabel2 = customtkinter.CTkLabel(master=frame, text="Monatlicher Leasing Preis: " + str(df.iloc[0, 7])) # im moment wird einfach noch der erste eintrag vom Preis genommen -> mit modellen verknüpfen
+    mylabel2 = customtkinter.CTkLabel(master=frame, text="Monatlicher Leasing Preis: " + str(brand_monthly_fees)) # im moment wird einfach noch der erste eintrag vom Preis genommen -> mit modellen verknüpfen
     mylabel2.grid(row=7, column=1)
 
 #Code um den Berechnen Button zu erstellen
