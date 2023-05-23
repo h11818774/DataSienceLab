@@ -1,6 +1,8 @@
 
+import cmd
 import customtkinter
 import pandas as pd
+import numpy as np
 
 df = pd.read_csv('data/preprocessed_df.csv') # csv file wird aus dem data folder geladen
 
@@ -49,14 +51,6 @@ kilometer_label.grid(row=3, column=0, padx=10)
 # Eingabefeld für die Kilometer
 entry3_kilometer = customtkinter.CTkEntry(master=frame, placeholder_text="fill out")
 entry3_kilometer.grid(row=4, column=0, padx=10)
-
-# Label für Deposit
-deposit_label = customtkinter.CTkLabel(master=frame, text="Deposit:")
-deposit_label.grid(row=3, column=1, padx=10)
-
-# Eingabefeld für Deposit
-entry4_deposit = customtkinter.CTkEntry(master=frame, placeholder_text="fill out")
-entry4_deposit.grid(row=4, column=1, padx=10)
 
 
 # Label for First Registration
@@ -176,14 +170,24 @@ entry10_kilowatts.grid_remove()
 fueltype_label.grid_remove()
 fueltype_combobox4.grid_remove()
 
-
+entry_fields = [marke_combobox1, model_combobox2, entry3_kilometer, entry5_registration,
+                  entry6_duration, gear_combobox3, entry7_emission,
+                 entry8_consumption, entry9_horsepower, entry10_kilowatts, fueltype_combobox4]
+columns = ["Brand", "Model", "Milage", "Registration", "Duration", 
+           "Gear", "Emission", "Consumption", "Horsepower",
+           "Kilowatts", "Fueltype"]
 
 #Funktion für den Berechnen Button
 def button():
-    # try to clear entry before new calculation is being made --> doesn't really work
-    mylabel2 = customtkinter.CTkLabel(master=frame, text="")
-    # Clear the previous label if it exists
-    mylabel2.destroy()
+    df_entries = pd.DataFrame(columns=columns)
+    for num, a in enumerate(entry_fields):
+        if len(a.get()) == 0:
+            column_name = columns[num]
+            df_entries.loc[0, column_name] = np.nan
+        else:
+            column_name = columns[num]
+            df_entries.loc[0, column_name] = a.get()
+
 
 
     # Filter the rows where the column "brand_name_Mazda" is equal to 1
@@ -193,6 +197,8 @@ def button():
     mylabel1.grid(row=15, column=0, columnspan=2)
     mylabel2 = customtkinter.CTkLabel(master=frame, text="Monthly Leasing Price: " + str(round(brand_monthly_fees)) + "€", font=("TkDefaultFont", 12, "bold")) # im moment wird einfach noch der erste eintrag vom Preis genommen -> mit modellen verknüpfen
     mylabel2.grid(row=16, column=0, columnspan=2)
+
+
     
 
 #Code um den Berechnen Button zu erstellen
