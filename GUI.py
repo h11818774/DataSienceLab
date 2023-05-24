@@ -1,8 +1,14 @@
 
-import cmd
+
 import customtkinter
 import pandas as pd
 import numpy as np
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer
+import joblib
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 
 df = pd.read_csv('data/preprocessed_df.csv') # csv file wird aus dem data folder geladen
 
@@ -173,9 +179,19 @@ fueltype_combobox4.grid_remove()
 entry_fields = [marke_combobox1, model_combobox2, entry3_kilometer, entry5_registration,
                   entry6_duration, gear_combobox3, entry7_emission,
                  entry8_consumption, entry9_horsepower, entry10_kilowatts, fueltype_combobox4]
-columns = ["Brand", "Model", "Milage", "Registration", "Duration", 
-           "Gear", "Emission", "Consumption", "Horsepower",
-           "Kilowatts", "Fueltype"]
+columns = ["brand_name", "model_name", "milage", "first_registration", "duration", 
+           "gear", "emission_value", "consumption", "horsepower",
+           "kilowatts", "fuel_type"]
+
+num_FEATURES = df[df.select_dtypes(include=['float64', 'int64']).columns].drop("monthly_fee", axis=1)
+cat_FEATURES = df[df.select_dtypes(exclude=['float64', 'int64']).columns]
+numeric_features = num_FEATURES.columns
+categorical_features = cat_FEATURES.columns
+
+column_names = list(numeric_features) + list(categorical_features)
+
+mylabel1 = None
+mylabel2 = None
 
 #Funktion für den Berechnen Button
 def button():
@@ -189,15 +205,51 @@ def button():
             df_entries.loc[0, column_name] = a.get()
 
 
+    df_X = df.drop('monthly_fee', axis=1)
+    df_X = pd.concat([df_X, df_entries], axis=0, ignore_index=True)
 
-    # Filter the rows where the column "brand_name_Mazda" is equal to 1
-    brand_monthly_fees = df.loc[df['brand_name'] == marke_combobox1.get(), 'monthly_fee'].mean()
 
+    numeric_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='median'))])
+
+    categorical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='constant', fill_value='missing'))])
+    
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+        ("num", numeric_transformer, numeric_features),
+        ("cat", categorical_transformer, categorical_features)])
+
+    df_imputed = pd.DataFrame(preprocessor.fit_transform(df_X))
+
+    entry_fields_imputet = df_imputed.tail(1)
+    entry_fields_imputet.columns = column_names
+    entry_fields_imputet = entry_fields_imputet[["first_registration", "milage", "duration", "emission_value", "consumption",
+                                                "horsepower", "kilowatts", "brand_name", "model_name", "gear", "fuel_type"]]
+    entry_fields_imputet = entry_fields_imputet.rename(columns={'first_registration': 'registration',
+                                                                'emission_value': 'emission',
+                                                                'brand_name': 'brand',
+                                                                'model_name': 'model',
+                                                                'fuel_type': 'fuel'})
+
+    print(entry_fields_imputet)
+
+
+    # Clear the text when the button is pressed again
+    global mylabel1, mylabel2
+    if mylabel1 is not None:
+        mylabel1.destroy()
+    if mylabel2 is not None:
+        mylabel2.destroy()
+
+    loaded_model = joblib.load('decision_tree_model.joblib')
+    leasing_price = loaded_model.predict(entry_fields_imputet)
+    print(leasing_price)
     mylabel1 = customtkinter.CTkLabel(master=frame, text="Leasing Preis of " + marke_combobox1.get() + " will be calculated!")
     mylabel1.grid(row=15, column=0, columnspan=2)
-    mylabel2 = customtkinter.CTkLabel(master=frame, text="Monthly Leasing Price: " + str(round(brand_monthly_fees)) + "€", font=("TkDefaultFont", 12, "bold")) # im moment wird einfach noch der erste eintrag vom Preis genommen -> mit modellen verknüpfen
+    mylabel2 = customtkinter.CTkLabel(master=frame, text="Monthly Leasing Price: " + str(round(leasing_price.item())) + "€", font=("TkDefaultFont", 12, "bold"))
     mylabel2.grid(row=16, column=0, columnspan=2)
-
 
     
 
